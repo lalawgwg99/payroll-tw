@@ -264,10 +264,58 @@ footer.site{border-top:1px solid var(--line);padding:30px 0 60px;color:var(--ink
   <div class="card"><h3>方案與兌換碼</h3><div id="planBox"></div>
     <div style="margin-top:10px"><button class="btn ghost sm" onclick="openRedeem()">輸入兌換碼</button></div>
   </div>
-  <div class="card"><h3>115 年法規參數（每年自動更新）</h3><div id="lawTable"></div>
-    <div style="margin-top:10px"><label class="f">職災保險費率（雇主全額，依勞保局核定行業費率填寫）</label>
-    <div class="row2"><div><input type="number" id="injRate" step="0.01" min="0"></div><div><button class="btn soft sm" style="margin-top:4px" onclick="saveInj()">儲存</button></div></div>
-    <div class="note">預設 0.14%。各行業費率不同，請依勞保局核定填寫。</div></div>
+  <div class="card"><h3><span class="eyebrow">Admin</span>參數後台</h3>
+    <div class="kv"><span>目前版本</span><b id="setVer"></b></div>
+    <div class="note">官方每年更新法規時，這裡會出現新版，一鍵套用即可。你也可以自己改任何數值，試算會即時跟著變。</div>
+    <div style="margin:10px 0"><button class="btn soft sm" onclick="resetSettings()">↺ 套用官方最新版</button></div>
+    <hr class="hr">
+    <div class="eyebrow">Rates</div>
+    <div class="row2">
+      <div><label class="f">最低工資（月薪）</label><input type="number" id="sMinWage" min="0"></div>
+      <div><label class="f">勞保費率 %</label><input type="number" id="sLaborRate" step="0.01" min="0"></div>
+    </div>
+    <div class="row2">
+      <div><label class="f">健保費率 %</label><input type="number" id="sHiRate" step="0.01" min="0"></div>
+      <div><label class="f">勞退雇主提繳 %</label><input type="number" id="sPensionRate" step="0.1" min="0"></div>
+    </div>
+    <div class="row2">
+      <div><label class="f">墊償基金費率 %</label><input type="number" id="sPadRate" step="0.001" min="0"></div>
+      <div><label class="f">職災費率 %（依行業）</label><input type="number" id="sInjRate" step="0.01" min="0"></div>
+    </div>
+    <div class="note">分擔比（勞保個人 20%／雇主 70%、健保個人 30%／雇主 60%×1.56）為法定，不開放修改。</div>
+    <hr class="hr">
+    <div class="eyebrow">Overtime</div>
+    <div class="row2">
+      <div><label class="f">平日延長 前2小時</label><input type="number" id="sOtW1" step="0.01" min="0"></div>
+      <div><label class="f">平日延長 第3小時起</label><input type="number" id="sOtW2" step="0.01" min="0"></div>
+    </div>
+    <div class="row2">
+      <div><label class="f">休息日 前2小時</label><input type="number" id="sOtR1" step="0.01" min="0"></div>
+      <div><label class="f">休息日 3–8小時</label><input type="number" id="sOtR2" step="0.01" min="0"></div>
+    </div>
+    <div class="row2">
+      <div><label class="f">休息日 9–12小時</label><input type="number" id="sOtR3" step="0.01" min="0"></div>
+      <div><label class="f">例假日／國定假日</label><input type="number" id="sOtH" step="0.01" min="0"></div>
+    </div>
+    <hr class="hr">
+    <div class="eyebrow">Deduction</div>
+    <div class="row2">
+      <div><label class="f">時薪除數（月薪÷？）</label><input type="number" id="sHourlyDiv" step="1" min="1"></div>
+      <div><label class="f">病假給薪比例 %</label><input type="number" id="sSickRatio" step="1" min="0" max="100"></div>
+    </div>
+    <hr class="hr">
+    <div class="eyebrow">Annual leave</div>
+    <label class="f">特休對照（滿 X 個月 → Y 天）</label>
+    <div id="annualEd"></div>
+    <div style="margin-top:8px"><button class="btn soft sm" onclick="addAnnualRow()">＋ 新增一列</button></div>
+    <hr class="hr">
+    <div class="eyebrow">Levels</div>
+    <label class="f">勞保投保薪資分級（一般）</label><textarea id="sLaborLevels" rows="2"></textarea>
+    <label class="f">勞保分級（部分工時）</label><textarea id="sPartLevels" rows="2"></textarea>
+    <label class="f">健保投保金額分級</label><textarea id="sHiLevels" rows="2"></textarea>
+    <label class="f">勞退月提繳分級</label><textarea id="sPensionLevels" rows="2"></textarea>
+    <div class="note">逗號分隔、由小到大。月薪介於兩級距間取較高者；部分工時未達 11,100 以 11,100 計；職災、健保未達基本工資以基本工資計。</div>
+    <div style="margin-top:14px"><button class="btn block" onclick="saveSettings()">儲存參數</button></div>
   </div>
   <div class="card"><h3>資料備份</h3>
     <p style="font-size:13px;color:var(--ink2)">所有資料只存在這台裝置的瀏覽器。換手機／清資料前請先匯出備份。</p>
@@ -290,34 +338,49 @@ footer.site{border-top:1px solid var(--line);padding:30px 0 60px;color:var(--ink
   <div>小店專用薪資計算・免 Excel・免登入・資料只存你的裝置<br>年費 NT$1,200／公司・法規每年自動更新</div>
 </div></footer>
 <script>
-/* ===== 薪算通 v1：115年法規引擎（每年更新此區即可） ===== */
-const LAW = {
-  ver: "115", verLabel: "115年（2026）",
+/* ===== 薪算通 v1：法規引擎＋參數後台 =====
+   DEFAULTS ＝官方 115 年版（我每年更新）；
+   顧客在「設定」後台改的數值存入 DB.settings，引擎一律讀 S()（自訂優先、預設遞補）。
+   每年法規更新時，顧客按「套用官方最新版」即生效。 */
+const DEFAULTS = {
+  ver: "115", verLabel: "115年（2026）官方版",
   minWage: 29500, minHourly: 196,
   laborRate: 0.125, laborEmpShare: 0.20, laborComShare: 0.70,
-  padFundRate: 0.00025,               // 工資墊償基金，雇主全額
-  hiRate: 0.0517, hiEmpShare: 0.30, hiComShare: 0.60, hiDepFactor: 1.56, // 雇主含平均眷口數0.56
-  pensionRate: 0.06,
-  // 投保薪資分級表（115.1.1施行；介於兩級距間取較高者）
+  padFundRate: 0.00025,
+  hiRate: 0.0517, hiEmpShare: 0.30, hiComShare: 0.60, hiDepFactor: 1.56,
+  pensionRate: 0.06, injRate: 0.0014,
+  hourlyDivisor: 240, sickPayRatio: 0.5,
+  partTimeFloor: 11100, // 部分工時勞保未達此金額以此申報（勞保局規定）
+  otWeekday: [1.34, 1.67], otRestday: [1.34, 1.67, 2.67], otHoliday: 2, otNational: 2,
+  annualTable: [[6,3],[12,7],[24,10],[36,14],[60,15],[120,16]], // [滿月數, 天數]
   laborLevels: [29500,30300,31800,33300,34800,36300,38200,40100,42000,43900,45800],
   partLevels: [1500,3000,4500,6000,7500,8700,9900,11100,12540,13500,15840,16500,17280,17880,19047,20008,21009,22000,23100,24000,25250,26400,27600,28590],
   hiLevels: [29500,30300,31800,33300,34800,36300,38200,40100,42000,43900,45800,48200,50600,53000,55400,57800,60800,63800,66800,69800,72800,76500,80200,83900,87600,92100,96600,101100,105600,110100,115500,120900,126300,131700,137100,142500,147900,150000],
   pensionLevels: [1500,3000,4500,6000,7500,8700,9900,11100,12540,13500,15840,16500,17280,17880,19047,20008,21009,22000,23100,24000,25250,26400,27600,28590,29500,30300,31800,33300,34800,36300,38200,40100,42000,43900,45800,48200,50600,53000,55400,57800,60800,63800,66800,69800,72800,76500,80200,83900,87600,92100,96600,101100,105600,110100,115500,120900,126300,131700,137100,142500,147900,150000],
-  maxLabor: 45800, maxHiNote: "150,000（內建至此；更高請手動輸入）", maxPension: 150000
+  maxLabor: 45800, maxPension: 150000
 };
 const R = Math.round;
+function S(){ return Object.assign({}, DEFAULTS, DB.settings || {}); }
+function isCustomized(){ return !!(DB.settings && Object.keys(DB.settings).length); }
 function pickLevel(levels, amount){ for(const l of levels){ if(amount <= l) return l; } return levels[levels.length-1]; }
 function laborLevelFor(wage){
-  if(wage >= LAW.minWage) return pickLevel(LAW.laborLevels, wage);
-  return Math.max(pickLevel(LAW.partLevels, wage), 11100); // 部分工時未達11100元以11100申報（勞保局規定）
+  const s = S();
+  if(wage >= s.minWage) return pickLevel(s.laborLevels, wage);
+  return Math.max(pickLevel(s.partLevels, wage), s.partTimeFloor);
 }
 
 /* ===== 資料層（localStorage 本機版） ===== */
 const DB_KEY = "xst_data_v1";
 let DB = loadDB();
 function loadDB(){
-  try{ const d = JSON.parse(localStorage.getItem(DB_KEY)); if(d && d.employees) return d; }catch(e){}
-  return { employees: [], att: {}, injRate: 0.14, plan: null, seq: 1 };
+  try{
+    const d = JSON.parse(localStorage.getItem(DB_KEY));
+    if(d && d.employees){
+      if(d.injRate !== undefined && !d.settings){ d.settings = { injRate: d.injRate/100 }; delete d.injRate; } // 舊版遷移
+      return d;
+    }
+  }catch(e){}
+  return { employees: [], att: {}, settings: null, plan: null, seq: 1 };
 }
 function saveDB(){ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }
 function uid(){ return "e" + (DB.seq++) + Date.now().toString(36); }
@@ -328,30 +391,34 @@ function attOf(month, empId){
   return DB.att[k];
 }
 
-/* ===== 計算引擎 ===== */
-function calcIns(laborWage, hiWage, pensionWage, hiDependents, pensionSelfPct, injRatePct){
-  const li = R(laborWage * LAW.laborRate);            // 勞保總保費
-  const laborEmp = R(li * LAW.laborEmpShare);
-  const laborCom = R(li * LAW.laborComShare);
-  const pad = R(laborWage * LAW.padFundRate);          // 墊償基金（雇主）
-  const hiBase = hiWage * LAW.hiRate;
-  const hiEmp = R(hiBase * LAW.hiEmpShare * (1 + hiDependents));
-  const hiCom = R(hiBase * LAW.hiComShare * LAW.hiDepFactor);
-  const penCom = R(pensionWage * LAW.pensionRate);
+/* ===== 計算引擎（全讀 S()） ===== */
+function calcIns(laborWage, hiWage, pensionWage, hiDependents, pensionSelfPct){
+  const s = S();
+  const li = R(laborWage * s.laborRate);            // 勞保總保費
+  const laborEmp = R(li * s.laborEmpShare);
+  const laborCom = R(li * s.laborComShare);
+  const pad = R(laborWage * s.padFundRate);          // 墊償基金（雇主）
+  const hiBase = hiWage * s.hiRate;
+  const hiEmp = R(hiBase * s.hiEmpShare * (1 + hiDependents));
+  const hiCom = R(hiBase * s.hiComShare * s.hiDepFactor);
+  const penCom = R(pensionWage * s.pensionRate);
   const penSelf = R(pensionWage * (pensionSelfPct/100));
-  const inj = R(Math.max(laborWage, LAW.minWage) * (injRatePct/100)); // 職災雇主全額，未達基本工資以基本工資計
+  const inj = R(Math.max(laborWage, s.minWage) * s.injRate); // 職災雇主全額，未達基本工資以基本工資計
   return { laborEmp, laborCom, pad, hiEmp, hiCom, penCom, penSelf, inj,
            comTotal: laborCom + pad + hiCom + penCom + inj };
 }
-function hourlyRateOf(emp){ return (emp.base + emp.allow) / 240; }
-function annualLeaveDays(hireDate, asOf){ // 特休天數（勞基法§38）
+function hourlyRateOf(emp){ return (emp.base + emp.allow) / S().hourlyDivisor; }
+function annualLeaveDays(hireDate, asOf){ // 特休天數（後台 annualTable 可調）
+  const s = S();
   const h = new Date(hireDate), a = new Date(asOf);
-  let y = a.getFullYear()-h.getFullYear(), m = y*12 + (a.getMonth()-h.getMonth());
+  let m = (a.getFullYear()-h.getFullYear())*12 + (a.getMonth()-h.getMonth());
   if(a.getDate() < h.getDate()) m--;
-  if(m < 6) return 0; if(m < 12) return 3;
-  const yrs = Math.floor(m/12);
-  if(yrs < 2) return 7; if(yrs < 3) return 10; if(yrs < 5) return 14; if(yrs < 10) return 15;
-  return Math.min(30, 15 + (yrs - 10) + 1);
+  const t = s.annualTable.slice().sort((x,y)=>x[0]-y[0]);
+  let days = 0;
+  for(const [mm, dd] of t){ if(m >= mm) days = dd; }
+  const last = t[t.length-1];
+  if(last && m >= last[0]) days = Math.min(30, last[1] + Math.floor((m - last[0]) / 12));
+  return days;
 }
 function yearSickHours(empId, year){ // 年度病假累計時數
   let t = 0;
@@ -361,19 +428,20 @@ function yearSickHours(empId, year){ // 年度病假累計時數
   return t;
 }
 function calcOne(emp, month){
+  const s = S();
   const a = attOf(month, emp.id);
   const hr = hourlyRateOf(emp);
   // 投保薪資（自動對照或手動）
   const wageBase = emp.base + emp.allow;
-  const laborWage = Math.min(emp.laborWage || laborLevelFor(wageBase), LAW.maxLabor);
-  const hiWage = emp.hiWage || pickLevel(LAW.hiLevels, wageBase);
-  const pensionWage = Math.min(emp.pensionWage || pickLevel(LAW.pensionLevels, wageBase), LAW.maxPension);
-  const ins = calcIns(laborWage, hiWage, pensionWage, emp.hiDep||0, emp.penSelf||0, DB.injRate);
+  const laborWage = Math.min(emp.laborWage || laborLevelFor(wageBase), s.maxLabor);
+  const hiWage = emp.hiWage || pickLevel(s.hiLevels, wageBase);
+  const pensionWage = Math.min(emp.pensionWage || pickLevel(s.pensionLevels, wageBase), s.maxPension);
+  const ins = calcIns(laborWage, hiWage, pensionWage, emp.hiDep||0, emp.penSelf||0);
   // 請假扣薪
   let deduct = 0, sickH = 0, annualH = 0;
   for(const l of a.leaves){
     if(l.type==="personal") deduct += R(l.hours * hr);
-    else if(l.type==="sick"){ deduct += R(l.hours * hr * 0.5); sickH += l.hours; }
+    else if(l.type==="sick"){ deduct += R(l.hours * hr * s.sickPayRatio); sickH += l.hours; }
     else if(l.type==="annual") annualH += l.hours;
   }
   // 全勤：115年新制，年病假≤80小時不扣，超過部分等比例扣
@@ -388,18 +456,18 @@ function calcOne(emp, month){
     fullDeduct = R(fullBonus / (workDays*8) * thisOver);
   }
   fullBonus -= fullDeduct;
-  // 加班費
+  // 加班費（倍率後台可調）
   const ot = a.ot;
-  const otPay = R(R(Math.min(ot.weekday,2) * hr * 1.34) + R(Math.max(0, ot.weekday-2) * hr * 1.67))
-              + R(R(Math.min(ot.restday,2) * hr * 1.34) + R(Math.min(Math.max(0,ot.restday-2),6) * hr * 1.67) + R(Math.max(0, ot.restday-8) * hr * 2.67))
-              + R(ot.holiday * hr * 2) + R(ot.national * hr * 2);
+  const otPay = R(R(Math.min(ot.weekday,2) * hr * s.otWeekday[0]) + R(Math.max(0, ot.weekday-2) * hr * s.otWeekday[1]))
+              + R(R(Math.min(ot.restday,2) * hr * s.otRestday[0]) + R(Math.min(Math.max(0,ot.restday-2),6) * hr * s.otRestday[1]) + R(Math.max(0, ot.restday-8) * hr * s.otRestday[2]))
+              + R(ot.holiday * hr * s.otHoliday) + R(ot.national * hr * s.otNational);
   const gross = emp.base + emp.allow + fullBonus;
   const net = gross - deduct - ins.laborEmp - ins.hiEmp - ins.penSelf + otPay;
   return { emp, month, hr: R(hr), gross, deduct, fullBonus, fullDeduct, otPay, net,
            ...ins, laborWage, hiWage, pensionWage,
            annualLeave: annualLeaveDays(emp.hire, month+"-28"), annualUsedH: annualH,
            sickH, lateMin: a.lateMin,
-           lowWage: wageBase < LAW.minWage };
+           lowWage: wageBase < s.minWage };
 }
 function countWorkdays(y, m){
   let c = 0; const d = new Date(y, m-1, 1);
@@ -407,6 +475,31 @@ function countWorkdays(y, m){
   return c;
 }
 const fmt = n => "NT$" + R(n).toLocaleString("en-US");
+
+/* ===== 後台參數驗證（純函數，可單測） ===== */
+function parseLevels(text){
+  const nums = String(text).split(/[,，、\s]+/).map(x=>+x).filter(x=>isFinite(x)&&x>0);
+  return nums;
+}
+function validateSettings(o){
+  const errs = [];
+  const pct = (k,label)=>{ const v=o[k]; if(!(v>0)) errs.push(label+"須大於 0"); };
+  pct("minWage","最低工資"); pct("laborRate","勞保費率"); pct("hiRate","健保費率");
+  pct("pensionRate","勞退提繳率"); pct("hourlyDivisor","時薪除數");
+  if(!(o.sickPayRatio>=0&&o.sickPayRatio<=1)) errs.push("病假給薪比例須介於 0–1");
+  const rates=(arr,label,n)=>{ if(!Array.isArray(arr)||arr.length!==n||!arr.every(x=>x>0)) errs.push(label+"須為"+n+"個正數"); };
+  rates(o.otWeekday,"平日加班倍率",2); rates(o.otRestday,"休息日加班倍率",3);
+  if(!(o.otHoliday>0)||!(o.otNational>0)) errs.push("例假日／國定假日倍率須大於 0");
+  const lv=(arr,label)=>{ if(!Array.isArray(arr)||arr.length<2) errs.push(label+"至少 2 個級距");
+    else for(let i=1;i<arr.length;i++) if(!(arr[i]>arr[i-1])){ errs.push(label+"須由小到大排列"); break; } };
+  lv(o.laborLevels,"勞保級距"); lv(o.partLevels,"部分工時級距"); lv(o.hiLevels,"健保級距"); lv(o.pensionLevels,"勞退級距");
+  if(!Array.isArray(o.annualTable)||!o.annualTable.length) errs.push("特休對照至少一列");
+  else { const t=o.annualTable.slice().sort((a,b)=>a[0]-b[0]);
+    for(let i=0;i<t.length;i++){ if(!(t[i][0]>0&&t[i][1]>=0)) { errs.push("特休對照數值不正確"); break; }
+      if(i>0&&!(t[i][0]>t[i-1][0])){ errs.push("特休年資須由小到大"); break; } } }
+  return { ok: errs.length===0, errs };
+}
+
 /* ===== UI ===== */
 const $ = s => document.querySelector(s);
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -452,7 +545,7 @@ function renderEmp(){
     return '<div class="emp"><div class="avatar">'+esc(e.name[0]||"員")+'</div>'
       +'<div><div class="nm">'+esc(e.name)+' '+(e.active?'':'<span class="chip off">已離職</span>')+'</div>'
       +'<div class="sub">到職 '+esc(e.hire)+'・本薪 '+fmt(e.base)+(e.allow?'＋津貼 '+fmt(e.allow):"")
-      +(w < LAW.minWage && e.active ? ' <span class="chip off">低於最低工資</span>' : "")+'</div></div>'
+      +(w < S().minWage && e.active ? ' <span class="chip off">低於最低工資</span>' : "")+'</div></div>'
       +'<div class="go"><button class="btn soft sm" onclick="openEmp(\''+e.id+'\')">編輯</button></div></div>';
   }).join("") : '<p style="color:var(--ink3);text-align:center">還沒有員工，按下方新增</p>';
 }
@@ -484,7 +577,7 @@ function saveEmp(id){
     active:$("#eActive").checked };
   if(id){ Object.assign(getEmp(id), d); } else { d.id = uid(); DB.employees.push(d); }
   saveDB(); renderEmp(); refreshEmpSelects(); closeModal(); toast("已儲存");
-  if(d.base + d.allow < LAW.minWage && d.active) toast("提醒：月薪低於最低工資 29,500");
+  if(d.base + d.allow < S().minWage && d.active) toast("提醒：月薪低於最低工資 "+S().minWage.toLocaleString());
 }
 function delEmp(id){
   if(!confirm("確定刪除？該員工的出勤記錄會一併清除。")) return;
@@ -587,18 +680,67 @@ function renderSlip(){
 
 /* ---- 設定 ---- */
 function renderLaw(){
-  $("#lawTable").innerHTML='<div class="kv"><span>最低工資（月／時）</span><b>29,500／196</b></div>'
-    +'<div class="kv"><span>勞保費率（個人20%／雇主70%）</span><b>12.5%</b></div>'
-    +'<div class="kv"><span>墊償基金（雇主全額）</span><b>0.025%</b></div>'
-    +'<div class="kv"><span>健保費率（個人30%／雇主60%×1.56）</span><b>5.17%</b></div>'
-    +'<div class="kv"><span>勞退雇主提繳</span><b>6%</b></div>'
-    +'<div class="kv"><span>加班費率</span><b>1.34／1.67／2.67</b></div>'
-    +'<div class="kv"><span>部分工時下限</span><b>勞保 11,100・職災／健保 29,500</b></div>'
-    +'<div class="note">版本：'+LAW.verLabel+'。法規異動時由薪算通統一更新（年費會員自動生效）。</div>';
-  $("#lawStatus").innerHTML='<div class="kv"><span>目前法規版本</span><b>'+LAW.verLabel+'，生效中</b></div><div class="note">最低工資 29,500・勞保 12.5%・健保 5.17%・勞退 6%</div>';
-  $("#injRate").value = DB.injRate;
+  const s = S();
+  $("#lawStatus").innerHTML='<div class="kv"><span>目前法規版本</span><b>'+esc(s.verLabel)+(isCustomized()?"・自訂版":"")+'</b></div>'
+    +'<div class="note">最低工資 '+s.minWage.toLocaleString()+'・勞保 '+(s.laborRate*100)+'%・健保 '+(s.hiRate*100)+'%・勞退 '+(s.pensionRate*100)+'%</div>';
 }
-function saveInj(){ const v=+$("#injRate").value; if(!(v>=0)){toast("費率不正確");return;} DB.injRate=v; saveDB(); toast("已儲存"); }
+let annualStaging = null;
+function renderSettings(){
+  const s = S();
+  $("#setVer").textContent = isCustomized() ? s.verLabel+"・自訂版（已修改）" : s.verLabel;
+  $("#sMinWage").value = s.minWage;
+  $("#sLaborRate").value = +(s.laborRate*100).toFixed(3);
+  $("#sHiRate").value = +(s.hiRate*100).toFixed(3);
+  $("#sPensionRate").value = +(s.pensionRate*100).toFixed(2);
+  $("#sPadRate").value = +(s.padFundRate*100).toFixed(4);
+  $("#sInjRate").value = +(s.injRate*100).toFixed(3);
+  $("#sOtW1").value = s.otWeekday[0]; $("#sOtW2").value = s.otWeekday[1];
+  $("#sOtR1").value = s.otRestday[0]; $("#sOtR2").value = s.otRestday[1]; $("#sOtR3").value = s.otRestday[2];
+  $("#sOtH").value = s.otHoliday;
+  $("#sHourlyDiv").value = s.hourlyDivisor;
+  $("#sSickRatio").value = s.sickPayRatio*100;
+  $("#sLaborLevels").value = s.laborLevels.join(",");
+  $("#sPartLevels").value = s.partLevels.join(",");
+  $("#sHiLevels").value = s.hiLevels.join(",");
+  $("#sPensionLevels").value = s.pensionLevels.join(",");
+  annualStaging = s.annualTable.map(r=>r.slice());
+  renderAnnualEd();
+}
+function renderAnnualEd(){
+  $("#annualEd").innerHTML = annualStaging.map((r,i)=>'<div class="row2 arow" style="margin-bottom:6px"><div><input type="number" class="am" min="1" value="'+r[0]+'" placeholder="滿幾個月"></div><div style="display:flex;gap:6px"><input type="number" class="ad" min="0" value="'+r[1]+'" placeholder="幾天"><button class="btn danger sm" onclick="delAnnualRow('+i+')">刪</button></div></div>').join("");
+}
+function syncAnnualFromDom(){
+  annualStaging = [...document.querySelectorAll(".arow")].map(row=>[+row.querySelector(".am").value, +row.querySelector(".ad").value]);
+}
+function addAnnualRow(){ syncAnnualFromDom(); annualStaging.push([12,7]); renderAnnualEd(); }
+function delAnnualRow(i){ syncAnnualFromDom(); annualStaging.splice(i,1); renderAnnualEd(); }
+function saveSettings(){
+  syncAnnualFromDom();
+  const num = id => +$("#"+id).value;
+  const d = S();
+  const o = {
+    ver: d.ver, verLabel: d.verLabel, minHourly: d.minHourly,
+    minWage: num("sMinWage"), laborRate: num("sLaborRate")/100, hiRate: num("sHiRate")/100,
+    pensionRate: num("sPensionRate")/100, padFundRate: num("sPadRate")/100, injRate: num("sInjRate")/100,
+    hourlyDivisor: num("sHourlyDiv"), sickPayRatio: num("sSickRatio")/100,
+    partTimeFloor: d.partTimeFloor, maxLabor: d.maxLabor, maxPension: d.maxPension,
+    laborEmpShare: 0.20, laborComShare: 0.70, hiEmpShare: 0.30, hiComShare: 0.60, hiDepFactor: 1.56,
+    otWeekday: [num("sOtW1"), num("sOtW2")], otRestday: [num("sOtR1"), num("sOtR2"), num("sOtR3")],
+    otHoliday: num("sOtH"), otNational: num("sOtH"),
+    annualTable: annualStaging,
+    laborLevels: parseLevels($("#sLaborLevels").value), partLevels: parseLevels($("#sPartLevels").value),
+    hiLevels: parseLevels($("#sHiLevels").value), pensionLevels: parseLevels($("#sPensionLevels").value)
+  };
+  const v = validateSettings(o);
+  if(!v.ok){ toast("參數有誤："+v.errs[0]); return; }
+  o.annualTable = o.annualTable.slice().sort((a,b)=>a[0]-b[0]);
+  DB.settings = o; saveDB(); renderSettings(); renderLaw(); toast("參數已儲存，試算即時生效");
+}
+function resetSettings(){
+  if(!isCustomized() || confirm("確定回到官方最新版？你的自訂會被清除。")){
+    DB.settings = null; saveDB(); renderSettings(); renderLaw(); toast("已套用"+S().verLabel);
+  }
+}
 function exportData(){
   const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
@@ -621,7 +763,7 @@ $("#mback").addEventListener("click",e=>{ if(e.target.id==="mback") closeModal()
 
 /* ---- init ---- */
 function curMonth(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
-function renderAll(){ renderPlan(); renderEmp(); refreshEmpSelects(); renderLaw();
+function renderAll(){ renderPlan(); renderEmp(); refreshEmpSelects(); renderLaw(); renderSettings();
   $("#snapMonth").textContent=curMonth();
   $("#snapGrid").innerHTML='<div class="stat"><div class="k">在職人數</div><div class="v">'+DB.employees.filter(e=>e.active).length+' <small>人</small></div></div><div class="stat"><div class="k">提示</div><div class="v" style="font-size:15px">到「薪資表」按一鍵試算</div></div>';
 }
